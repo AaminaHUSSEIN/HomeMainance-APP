@@ -5,7 +5,7 @@ import { protect } from '../Middleware/auth.js';
 
 const router = express.Router();
 
-// 1. DIIWAANGELINTA (Kani waa kan xallinaya 404 Error)
+// 1. DIIWAANGELINTA
 router.post('/register', async (req, res) => {
     try {
         const { name, email, password, phone, role } = req.body;
@@ -25,7 +25,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// 2. PROVIDER APPLY (Codsiga Nasir/Nimco)
+// 2. PROVIDER APPLY
 router.post('/providers/apply', async (req, res) => {
     try {
         const { fullName, email, phone, serviceType, location, bio } = req.body;
@@ -33,13 +33,37 @@ router.post('/providers/apply', async (req, res) => {
         if (alreadyApplied) return res.status(400).json({ message: "Codsi hore ayaa laga hayaa email-kan" });
 
         await Provider.create({ fullName, email, phone, serviceType, location, bio, status: 'pending' });
-        res.status(201).json({ success: true, message: "Codsigaaga waa la helay!" });
+        res.status(201).json({ success: true, message: "Codsigaaga waa la helid!" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// 3. LOGIN
+// 3. HELITAANKA DHAMAAN KHUBARADA
+router.get('/all-providers', async (req, res) => {
+    try {
+        const activeProviders = await User.find({ role: 'provider' }).select('-password');
+        res.status(200).json({ success: true, data: activeProviders });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// --- 4. HALKAN AYAA KA MAQNAA (HELITAANKA HAL KHABIIR) ---
+// Route-kan wuxuu saxayaa cilada 404 ee Profile-ka
+router.get('/provider/:id', async (req, res) => {
+    try {
+        const provider = await User.findById(req.params.id).select('-password');
+        if (!provider) {
+            return res.status(404).json({ success: false, message: "Khabiirka lama helin" });
+        }
+        res.status(200).json({ success: true, data: provider });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 5. LOGIN
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;

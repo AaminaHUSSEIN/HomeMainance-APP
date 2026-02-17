@@ -8,7 +8,6 @@ const ProviderCard = ({ provider }) => {
       
       {/* Provider Image Section */}
       <div className="relative h-56 bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center overflow-hidden">
-        {/* Decorative Background Element */}
         <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:rotate-12 transition-transform duration-700">
            <FiShield size={120} />
         </div>
@@ -35,7 +34,7 @@ const ProviderCard = ({ provider }) => {
       <div className="p-8">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-2xl font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">
-            {provider.fullName}
+            {provider.name}
           </h3>
           {provider.status === 'approved' && (
             <div className="bg-blue-50 p-1 rounded-full">
@@ -45,7 +44,7 @@ const ProviderCard = ({ provider }) => {
         </div>
 
         <p className="text-blue-600 font-black text-[10px] uppercase tracking-[0.2em] mb-6">
-          {provider.serviceType || 'General Specialist'}
+          {provider.serviceName || 'Professional Specialist'}
         </p>
 
         {/* Contact Info Grid */}
@@ -57,19 +56,17 @@ const ProviderCard = ({ provider }) => {
             <span className="text-sm font-bold tracking-tight">{provider.phone}</span>
           </div>
           
-          {provider.email && (
-            <div className="flex items-center gap-3 text-slate-500 group/item">
-              <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center group-hover/item:bg-blue-50 group-hover/item:text-blue-600 transition-colors">
-                <FiMail size={14} />
-              </div>
-              <span className="text-sm font-bold tracking-tight truncate">{provider.email}</span>
+          <div className="flex items-center gap-3 text-slate-500 group/item">
+            <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center group-hover/item:bg-blue-50 group-hover/item:text-blue-600 transition-colors">
+              <FiMail size={14} />
             </div>
-          )}
+            <span className="text-sm font-bold tracking-tight truncate">{provider.email}</span>
+          </div>
         </div>
 
-        {/* Action Button */}
+        {/* View Profile Action */}
         <Link
-          to={`/providers/${provider._id}`}
+          to={`/provider-profile/${provider._id}`} 
           className="group/btn flex items-center justify-between w-full bg-slate-900 text-white px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-600 transition-all duration-300 shadow-lg shadow-slate-200"
         >
           <span>View Profile</span>

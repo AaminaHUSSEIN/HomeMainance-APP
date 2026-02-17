@@ -11,9 +11,9 @@ import Sidebar from './components/layout/Sidebar';
 import Home from './pages/Home';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
+import ForgotPassword from './components/auth/ForgotPassword'; // <--- HUBI INAAD KAN KU DARTAY
 import Dashboard from './pages/Dashboard';
 import ServicesPage from './pages/ServicesPage';
-import ServiceDetail from './components/services/ServiceDetail';
 import ProfilePage from './pages/ProfilePage';
 import ProviderList from './components/providers/ProviderList';
 import ProviderProfile from './components/providers/ProviderProfile';
@@ -30,16 +30,15 @@ import { AuthContext } from './context/AuthContext';
 // --- PROTECTED ROUTE (User) ---
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useContext(AuthContext);
-  if (isLoading) return <div className="text-center mt-20">Loading...</div>;
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return children;
 };
 
-// --- ADMIN ROUTE (SAXID) ---
+// --- ADMIN ROUTE ---
 const AdminRoute = ({ children }) => {
   const { isAuthenticated, user, isLoading } = useContext(AuthContext);
-  if (isLoading) return <div className="text-center mt-20">Loading...</div>;
-  // SAX: Waa inuu noqdaa (user?.role === 'admin') si admin-ku u galo
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (isAuthenticated && user?.role === 'admin') {
     return children;
   }
@@ -51,11 +50,12 @@ function App() {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex flex-col min-h-screen font-sans antialiased bg-gray-50">
+    <div className="flex flex-col min-h-screen font-sans antialiased bg-[#f8fafc]">
       <Toaster position="top-right" />
       <Header onMenuClick={() => setSidebarOpen(true)} />
 
       <div className="flex flex-1 relative overflow-x-hidden">
+        {/* Sidebar-ku wuxuu u muuqanayaa kaliya qofka soo galay (Logged In) */}
         {isAuthenticated && (
           <Sidebar isOpen={isSidebarOpen} onClose={() => setSidebarOpen(false)} />
         )}
@@ -63,40 +63,39 @@ function App() {
         <main className={`flex-grow transition-all duration-300 ${isAuthenticated ? 'md:ml-64' : ''}`}>
           <div className="p-4 md:p-8">
             <Routes>
-              {/* Public Routes */}
+              {/* --- PUBLIC ROUTES --- */}
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} /> {/* <--- HADDA WUU SHAQAYNAYAA */}
               <Route path="/services" element={<ServicesPage />} />
               <Route path="/providers" element={<ProviderList />} />
-              <Route path="/providers/:id" element={<ProviderProfile />} />
+              <Route path="/provider-profile/:id" element={<ProviderProfile />} />
 
-              {/* User Routes */}
+              {/* --- PROTECTED USER ROUTES --- */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               
-              {/* 1. Bogga ballan-qabsashada (Nimco) */}
               <Route 
                 path="/book-service/:providerId" 
                 element={<ProtectedRoute><BookingForm /></ProtectedRoute>} 
               />
 
-              {/* 2. Ballamaha Nimco u gaarka ah */}
               <Route 
                 path="/bookings" 
                 element={<ProtectedRoute><BookingsPage isAdminView={false} /></ProtectedRoute>} 
               />
 
-              {/* Admin Routes */}
+              {/* --- ADMIN ONLY ROUTES --- */}
               <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
               <Route path="/admin/verifications" element={<AdminRoute><AdminVerifications /></AdminRoute>} />
               
-              {/* 3. Maamulka guud ee ballamaha (Admin View Only) */}
               <Route 
                 path="/admin/bookings" 
                 element={<AdminRoute><BookingsPage isAdminView={true} /></AdminRoute>} 
               />
 
+              {/* Haddii URL khaldan la qoro ama meel aan jirin, ku celi Home */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>

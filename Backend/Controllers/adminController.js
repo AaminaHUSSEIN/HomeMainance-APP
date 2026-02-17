@@ -2,12 +2,14 @@ import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Booking from '../models/Booking.js';
 
-// 1. Dashboard Stats (Sidaada ayay u fiican tahay)
+// 1. Dashboard Stats
 export const getAdminStats = async (req, res) => {
     try {
         const totalUsers = await User.countDocuments({ role: 'customer' });
         const totalBookings = await Booking.countDocuments();
         const activeProviders = await User.countDocuments({ role: 'provider' });
+        
+        // Helitaanka tirada codsiyada ku jira collection-ka kale
         const pendingCount = await mongoose.connection.db.collection('providers').countDocuments({ status: 'pending' });
 
         const revenueData = await Booking.aggregate([
@@ -39,7 +41,7 @@ export const getPendingProviders = async (req, res) => {
     }
 };
 
-// 3. Ansixinta Provider (Approve) - KAN AYAA LA SAXAY
+// 3. Ansixinta Provider (Approve)
 export const approveProvider = async (req, res) => {
     try {
         const { id } = req.params;
@@ -49,33 +51,33 @@ export const approveProvider = async (req, res) => {
             return res.status(404).json({ success: false, message: "Codsiga lama helin" });
         }
 
-        // TALAABADA SAXDA AH: Hubi haddii uu email-ku horay u jiray (User ahaan)
-        const existingUser = await User.findOne({ email: providerData.email });
+        /**
+         * XALKA DUPLICATE ERROR:
+         * Waxaan isticmaaleynaa findOneAndUpdate oo leh 'upsert: true'.
+         * Haddii qofku jiro, role-ka ayaa laga dhigayaa 'provider'.
+         * Haddii uusan jirin, qof cusub ayaa la abuurayaa.
+         */
+        await User.findOneAndUpdate(
+            { email: providerData.email },
+            { 
+                $set: {
+                    name: providerData.fullName,
+                    email: providerData.email,
+                    phone: providerData.phone,
+                    role: 'provider',
+                    isVerified: true
+                },
+                $setOnInsert: { password: "temporaryPassword123" }
+            },
+            { upsert: true, new: true }
+        );
 
-        if (existingUser) {
-            // Haddii uu jiro, uun u bedel doorkiisa 'provider'
-            existingUser.role = 'provider';
-            existingUser.isVerified = true;
-            await existingUser.save();
-        } else {
-            // Haddii uusan jirin, markaas abuur mid cusub
-            await User.create({
-                name: providerData.fullName,
-                email: providerData.email,
-                password: "temporaryPassword123", 
-                phone: providerData.phone,
-                role: 'provider',
-                isVerified: true
-            });
-        }
-
-        // Ugu dambayn ka tirtir codsiga pending-ka ahaa
+        // Ugu dambayn ka tirtir codsiga collection-ka 'providers'
         await mongoose.connection.db.collection('providers').deleteOne({ _id: new mongoose.Types.ObjectId(id) });
         
         res.status(200).json({ success: true, message: "Xirfadlaha waa la ansixiyey si guul leh" });
 
     } catch (error) {
-        // Halkan ayaa soo qabanaysa Duplicate Email Error
         res.status(500).json({ success: false, message: error.message });
     }
 };

@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api'; 
-import { FiCalendar, FiClock, FiMapPin, FiCheck, FiX } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiMapPin, FiTool, FiAlertCircle } from 'react-icons/fi';
 
-const BookingsPage = () => {
+const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAllBookings();
+    fetchMyBookings();
   }, []);
 
-  const fetchAllBookings = async () => {
+  const fetchMyBookings = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/bookings/all');
+      // SAXID: Waxaan isticmaalaynaa jidka macmiilka u furan si looga fogaado Error 403
+      const res = await api.get('/bookings/my-bookings');
       setBookings(res.data.data || []); 
     } catch (err) {
       console.error("Qalad xogta xaga keenista:", err);
@@ -22,21 +23,14 @@ const BookingsPage = () => {
     }
   };
 
-  const handleUpdateStatus = async (id, newStatus) => {
-    if (!window.confirm(`Ma hubtaa inaad ballantan ${newStatus === 'approved' ? 'ogolaato' : 'diido'}?`)) return;
-    
-    try {
-      // URL-kan wuxuu saxayaa Error 500 ee console-ka ka muuqday
-      const action = newStatus === 'approved' ? 'approve' : 'reject';
-      await api.put(`/admin/${action}/${id}`); 
-      
-      setBookings(prev => 
-        prev.map(b => b._id === id ? { ...b, status: newStatus } : b)
-      );
-      alert(`Si guul leh ayaa loo ${newStatus === 'approved' ? 'ansixiyey' : 'diiday'}!`);
-    } catch (err) {
-      console.error("Ciladda Server-ka:", err);
-      alert("Cilad 500: Server-ka ayaa fashilmay. Hubi in URL-ku yahay /api/admin/approve");
+  const getStatusStyles = (status) => {
+    switch (status) {
+      case 'approved':
+        return 'bg-emerald-50 text-emerald-600 border-emerald-200';
+      case 'rejected':
+        return 'bg-red-50 text-red-600 border-red-200';
+      default:
+        return 'bg-amber-50 text-amber-600 border-amber-200';
     }
   };
 
@@ -49,67 +43,65 @@ const BookingsPage = () => {
   return (
     <div className="min-h-screen bg-[#f8fafc] py-12 px-6">
       <div className="max-w-5xl mx-auto">
-        <header className="mb-10">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-            Maamulka <span className="text-blue-600">Ballamaha</span>
-          </h1>
-          <p className="text-slate-500 font-medium mt-2">Guud ahaan waxaa jira {bookings.length} ballan.</p>
+        <header className="mb-10 flex justify-between items-end">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+              Ballamahayga <span className="text-blue-600">Gaarka Ah</span>
+            </h1>
+            <p className="text-slate-500 font-medium mt-2 italic">
+              Waxaad qabsatay guud ahaan {bookings.length} ballan.
+            </p>
+          </div>
+          <div className="hidden md:block">
+             <FiAlertCircle className="text-slate-300" size={40} />
+          </div>
         </header>
 
         <div className="grid gap-6">
           {bookings.length === 0 ? (
-            <div className="bg-white p-12 rounded-[2rem] text-center border-2 border-dashed border-slate-200">
-              <p className="text-slate-400 font-bold">Wax ballan ah laguma helin.</p>
+            <div className="bg-white p-16 rounded-[2.5rem] text-center border-2 border-dashed border-slate-200 shadow-sm">
+              <p className="text-slate-400 font-bold text-lg italic">Weli wax ballan ah ma aadan qabsan.</p>
             </div>
           ) : (
             bookings.map((booking) => (
-              <div key={booking._id} className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
-                <div className="flex-1">
-                  <h3 className="text-xl font-extrabold text-slate-900 mb-1">
-                    {booking.service?.fullName || `Adeegga: ${booking.service?._id?.slice(-6) || 'N/A'}`}
-                  </h3>
-                  <p className="text-blue-600 font-bold text-sm mb-4">
-                    Macmiilka: {booking.userId?.name || "Macmiil aan la aqoon"}
-                  </p>
+              <div 
+                key={booking._id} 
+                className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6 transition hover:shadow-md hover:border-blue-100"
+              >
+                <div className="flex-1 w-full">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="bg-blue-50 p-3 rounded-2xl text-blue-600">
+                      <FiTool size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-extrabold text-slate-900 uppercase tracking-tight">
+                        {booking.service?.fullName || "Adeeg la dalbaday"}
+                      </h3>
+                      <span className="text-[10px] font-bold text-slate-400">ID: {booking._id.slice(-8).toUpperCase()}</span>
+                    </div>
+                  </div>
                   
-                  <div className="flex flex-wrap gap-4 text-slate-500 text-sm font-semibold">
-                    <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                  <div className="flex flex-wrap gap-4 text-slate-500 text-sm font-bold">
+                    <span className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
                       <FiCalendar className="text-blue-500" /> {booking.date || 'Lama cayimin'}
                     </span>
-                    <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                    <span className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
                       <FiClock className="text-blue-500" /> {booking.time || '10:00 AM'}
                     </span>
-                    <span className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                      <FiMapPin className="text-blue-500" /> {booking.address || 'Hargeisa, SL'}
+                    <span className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                      <FiMapPin className="text-blue-500" /> {booking.address || 'Address-ka lama hayo'}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center md:items-end gap-3 min-w-[150px]">
-                  <div className="text-3xl font-black text-slate-900">${booking.totalPrice || 25}</div>
+                <div className="flex flex-col items-center md:items-end gap-3 min-w-[150px] w-full md:w-auto border-t md:border-t-0 pt-4 md:pt-0">
+                  <div className="text-3xl font-black text-slate-900 tracking-tighter">
+                    ${booking.totalPrice || 25}
+                  </div>
                   
-                  {booking.status === 'pending' ? (
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => handleUpdateStatus(booking._id, 'approved')}
-                        className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl flex items-center gap-1 text-[11px] font-black transition shadow-sm"
-                      >
-                        <FiCheck size={16} /> APPROVE
-                      </button>
-                      <button 
-                        onClick={() => handleUpdateStatus(booking._id, 'rejected')}
-                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-xl flex items-center gap-1 text-[11px] font-black transition shadow-sm"
-                      >
-                        <FiX size={16} /> REJECT
-                      </button>
-                    </div>
-                  ) : (
-                    <span className={`px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest border ${
-                      booking.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-red-50 text-red-600 border-red-200'
-                    }`}>
-                      {booking.status}
-                    </span>
-                  )}
+                  <span className={`px-6 py-2 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] border ${getStatusStyles(booking.status)}`}>
+                    {booking.status || 'pending'}
+                  </span>
                 </div>
               </div>
             ))
@@ -120,4 +112,4 @@ const BookingsPage = () => {
   );
 };
 
-export default BookingsPage;
+export default MyBookings;

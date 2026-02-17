@@ -1,32 +1,25 @@
 import api from './api';
 
 const providerService = {
-    // 1. Soo kicinta dhammaan (Xallinta fariinta: Nadheeryahan lama helin)
-    getAll: async () => {
+    /**
+     * Waxaan u oggolaanaynaa serviceId inuu noqdo mid ikhiyaari ah.
+     * Haddii la soo diro, Backend-ka ayaa soo filter-gareynaya.
+     */
+    getAll: async (serviceId = null) => {
         try {
-            const response = await api.get('/providers');
-            // Backend-kaagu wuxuu soo celiyaa { success: true, data: [...] }
-            // Waa inaan u marnaa response.data.data si aan u helno liiska
-            return response.data.data || response.data;
+            // Waxaan isticmaalaynaa 'params' si Axios uu si nidaamsan ugu daro ?serviceId=...
+            const response = await api.get('/users/all-providers', {
+                params: serviceId ? { serviceId } : {}
+            });
+            
+            // Hubi in response.data.data ay tahay meesha xogtu ku jirto (sida sawiradaadu tuseen)
+            return response.data.data || []; 
         } catch (error) {
-            console.error("Error fetching providers:", error);
+            console.error("Cillad ayaa ka dhacday keenista khubarada:", error);
             return [];
         }
-    },
-
-    // 2. Diiwaangelinta (Register)
-    register: async (providerData) => {
-        const response = await api.post('/providers/register', providerData);
-        return response.data;
-    },
-
-    // 3. Inta kale ee functions-ka
-    getById: async (id) => {
-        const response = await api.get(`/providers/${id}`);
-        return response.data.data || response.data;
     }
 };
 
-// XALKA SYNTAX ERROR: Labadan dhoofinba waa muhiim
 export { providerService };
 export default providerService;
