@@ -13,7 +13,7 @@ const ProviderProfile = () => {
     const loadProvider = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`'https://homemainance-app-production.up.railway.app'/api/users/provider/${id}`);
+        const res = await axios.get(`/api/users/provider/${id}`);
         if (res.data.success) {
           setProvider(res.data.data);
         }
