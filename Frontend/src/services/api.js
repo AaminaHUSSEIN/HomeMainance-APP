@@ -1,10 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // Koodkani wuxuu si otomaatig ah u gartaa haddii aad joogto Localhost iyo haddii aad Live tahay
-  baseURL: window.location.origin.includes('localhost') 
-    ? 'http://localhost:5006/api' 
-    : '/api',
+  // Haddii uu jiro VITE_API_URL (Railway) isticmaal, haddii kale localhost
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5006/api',
 });
 
 api.interceptors.request.use((config) => {
