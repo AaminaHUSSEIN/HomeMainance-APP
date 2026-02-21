@@ -23,8 +23,7 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB Connected!"))
     .catch((err) => console.error("❌ Database Error:", err));
 
-// 3. ISKU XIRKA ROUTES (HALKAN AYAA MUHIIM AH)
-// Hadda Frontend-kaagu wuxuu si sax ah u heli doonaa /api/auth/forgot-password
+// 3. ISKU XIRKA ROUTES
 app.use('/api/auth', userRoutes);      
 app.use('/api/users', userRoutes);      
 app.use('/api/services', serviceRoutes);
@@ -43,7 +42,10 @@ app.use((err, req, res, next) => {
     });
 });
 
+
 const PORT = process.env.PORT || 5006;
-app.listen(PORT, () => {
-    console.log(` Server is running on http://localhost:${PORT}`);
+
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
 });
