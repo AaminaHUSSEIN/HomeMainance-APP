@@ -13,31 +13,31 @@ import bookingRoutes from './routes/routeBooking.js';
 import reviewRoutes from './routes/reviews.js'; 
 import adminRoutes from './routes/adminRoutes.js'; 
 
+// 2. Habaynta __dirname (ES Modules)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config();
 const app = express();
 
-// --- TALLAABADA MUHIIMKA AH: CORS (Hagaajinta ugu dambaysa) ---
+// --- TALLAABADA MUHIIMKA AH: CORS ---
+// Hubi in URL-kan uu yahay kanaga Railway
 const allowedOrigins = [
     'https://homemainance-app-production.up.railway.app',
-    'http://localhost:5173',
+    'http://localhost:5173', // Wixii tijaabo ah
     'http://localhost:3000'
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Oggolow haddii origin-ku ku jiro liiska ama haddii uu yahay isla server-ka (undefined)
-        if (!origin || allowedOrigins.includes(origin)) {
+        // Oggolow haddii origin-ku ku jiro liiska ama haddii uu yahay aalad (sida Postman)
+        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin === 'null') {
             callback(null, true);
         } else {
-            // Talo: Haddii aad rabto inaad wada oggolaato dhammaan inta aad tijaabada ku jirto, 
-            // isticmaal `callback(null, true)` halkii aad error ka bixin lahayd.
-            callback(new Error('CORS Policy: Origin not allowed by Security'));
+            callback(new Error('CORS Policy: Origin not allowed'));
         }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
@@ -64,12 +64,14 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes); 
 
 // 5. Serving Frontend (Static Files)
-const frontendPath = path.resolve(__dirname, 'Frontend', 'dist');
+// Hubi in faylka 'Frontend/dist' uu dhab ahaan u jiro meesha saxda ah
+const frontendPath = path.join(__dirname, 'Frontend', 'dist');
 app.use(express.static(frontendPath)); 
 
 // 6. Root Route (Handling Frontend Routing)
+// Midkani waa inuu ahaadaa kan ugu dambeeya ee Routes-ka
 app.get('*', (req, res) => {
-    // Haddii codsigu yahay API, laakiin aan la helin (404 API)
+    // Haddii codsigu ku bilaabmo /api/, ha u dirin frontend-ka (Error 404 API)
     if (req.url.startsWith('/api/')) {
         return res.status(404).json({ message: "API route not found" });
     }
@@ -87,13 +89,15 @@ app.use((err, req, res, next) => {
     console.error("🔥 Server Error Stack:", err.stack);
     res.status(err.status || 500).json({ 
         success: false, 
-        message: err.message || "Cillad farsamo ayaa dhacday!"
+        message: err.message || "Cillad farsamo ayaa dhacday!",
+        error: process.env.NODE_ENV === 'development' ? err.message : {}
     });
 });
 
 const PORT = process.env.PORT || 5006;
 
-// MUHIIM: '0.0.0.0' ayaa u ogolaanaya Railway inuu banaanka u saaro port-ka
+// '0.0.0.0' waa lagama maarmaan si Railway uu u helo server-ka
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server is running on port ${PORT}`);
+    console.log(`🌍 Frontend path: ${frontendPath}`);
 });
