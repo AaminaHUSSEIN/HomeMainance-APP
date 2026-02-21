@@ -24,7 +24,7 @@ const Home = () => {
                 
                 <h1 className="text-6xl md:text-8xl font-black text-white leading-[0.95] tracking-tighter">
                   Expertise <br />
-                  <span className="text-sky-500 italic">On Demand.</span>
+                  <span className="text-sky-500 italic">On Demand </span>
                 </h1>
                 
                 <p className="text-slate-400 text-xl max-w-lg leading-relaxed font-medium">
