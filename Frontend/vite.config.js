@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: 'dist', // Hubi in folder-kani uu yahay kan uu server.js raadinayo
+    outDir: 'dist',
+    rollupOptions: {
+      input: './index.html' // Waxaan si toos ah ugu sheegaynaa halka index.html yaallo
+    }
   }
 })
