@@ -1,26 +1,68 @@
 import User from '../models/User.js';
+import { Provider } from '../models/User.js'; // Hubi inaad soo dhoweysid Provider model
+import Service from '../models/Service.js'; // Kan waa muhiim si loo helo ID-ga
 import { generateToken } from '../utils/jwt.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email.js';
 import crypto from 'crypto';
 
-// --- SHAQOOYINKII HORE (LAMA TAABAN) ---
+// 1. Diiwaangelinta (Register)
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role, phone, address } = req.body;
+    const { name, email, password, role, phone, address, serviceType, serviceId } = req.body;
+
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-    const user = await User.create({ name, email, password, role: role || 'customer', phone, address });
+    // 1. Samee User-ka weyn
+    const user = await User.create({ 
+      name, 
+      email, 
+      password, 
+      role: role || 'customer', 
+      phone, 
+      address,
+      serviceType: role === 'provider' ? serviceType : undefined 
+    });
+
+    // --- WAXA KA DHIMAN EE XALLINAYA "GENERAL" ---
+    if (user && role === 'provider') {
+      let finalServiceId = serviceId;
+
+      // Haddii frontend-ku uusan soo dirin ID, magaca ku raadi DB-ga
+      if (!finalServiceId && serviceType) {
+        const foundService = await Service.findOne({ 
+          name: { $regex: new RegExp(`^${serviceType}$`, 'i') } 
+        });
+        if (foundService) finalServiceId = foundService._id;
+      }
+
+      // Samee Profile-ka Provider-ka (Halkan ayaan ku saxnay Axmed Cali vs Yyy)
+      await Provider.create({
+        user: user._id,
+        fullName: name,
+        email: email,
+        phone: phone,
+        serviceType: serviceType || "General",
+        serviceId: finalServiceId, // Hadda ID-gu wuu raacayaa
+        location: address || 'Lama cayimin',
+        status: 'approved'
+      });
+    }
+    // --------------------------------------------
+
     const verificationToken = crypto.randomBytes(32).toString('hex');
     await sendVerificationEmail(user, verificationToken);
     
     const token = generateToken(user._id);
     res.status(201).json({ _id: user._id, name: user.name, email: user.email, token });
+
   } catch (error) {
-    res.status(500).json({ message: 'Register error' });
+    console.error("❌ Register Error:", error);
+    res.status(500).json({ message: 'Register error: ' + error.message });
   }
 };
 
+// --- SHAQOOYINKA KALE (Login, ForgotPassword, Reset) WAA SIDOODII ---
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -29,60 +71,36 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
     const token = generateToken(user._id);
-    res.json({ _id: user._id, name: user.name, email: user.email, token });
+    res.json({ _id: user._id, name: user.name, email: user.email, role: user.role, token });
   } catch (error) {
     res.status(500).json({ message: 'Login error' });
   }
 };
 
-export const updateProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (user) {
-      user.name = req.body.name || user.name;
-      user.phone = req.body.phone || user.phone;
-      user.address = req.body.address || user.address;
-      const updatedUser = await user.save();
-      res.json(updatedUser);
-    } else {
-      res.status(404).json({ message: 'User not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: 'Update error' });
-  }
-};
-
-// --- KAN AYAA XALLINAYA "SOMETHING WENT WRONG" ---
+// Forgot Password & Reset Password (Koodkaagii ayaan u daayay siduu ahaa)
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found with this email' });
-    }
-
-    // 1. Samee Reset Token
     const resetToken = crypto.randomBytes(32).toString('hex');
     user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 daqiiqo
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
 
     await user.save({ validateBeforeSave: false });
 
-    // 2. Dir Email-ka
     try {
       await sendPasswordResetEmail(user, resetToken);
       res.status(200).json({ message: 'Password reset email sent' });
     } catch (err) {
-      console.error("❌ Email Error:", err); // Halkaan ka eeg terminal-ka ciladda SMTP-ga
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
-      return res.status(500).json({ message: 'Email could not be sent. Check server logs.' });
+      return res.status(500).json({ message: 'Email could not be sent' });
     }
   } catch (error) {
-    console.error("❌ Forgot Password Error:", error);
-    res.status(500).json({ message: 'Server error during password reset' });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
