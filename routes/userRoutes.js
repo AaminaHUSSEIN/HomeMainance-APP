@@ -49,22 +49,21 @@ router.put('/profile', protect, async (req, res) => {
   }
 });
 
-// --- 3. HELITAANKA DHAMAAN KHUBARADA (Providers List) ---
-// Tani waxay xallinaysaa in dadka cusub (Axmed Cali) ay soo muuqdaan
-router.get('/providers', async (req, res) => {
+// --- 3. HELITAANKA DHAMAAN KHUBARADA (La saxay: all-providers) ---
+// Frontend-kaagu wuxuu rabaa '/all-providers'
+router.get('/all-providers', async (req, res) => {
   try {
     const { serviceId } = req.query;
     
-    // Filter-ka aasaasiga ah: Kaliya kuwa 'approved' ah
+    // Filter-ka aasaasiga ah
     let filter = { status: 'approved' };
 
-    // Haddii serviceId uu URL-ka ku jiro, ku dar filter-ka
+    // Haddii serviceId la soo diro, ku dar filter-ka
     if (serviceId && serviceId !== 'null' && serviceId !== 'undefined') {
       filter.serviceId = serviceId; 
     }
 
-    const activeProviders = await Provider.find(filter)
-      .sort({ updatedAt: -1 });
+    const activeProviders = await Provider.find(filter).sort({ updatedAt: -1 });
     
     res.status(200).json({ 
       success: true, 
@@ -76,18 +75,28 @@ router.get('/providers', async (req, res) => {
   }
 });
 
-// --- 4. HELITAANKA HAL KHABIIR (Single Provider) ---
+// Sidii hore u hayso '/providers' si uusan meel kale uga xumaan
+router.get('/providers', async (req, res) => {
+  try {
+    const { serviceId } = req.query;
+    let filter = { status: 'approved' };
+    if (serviceId && serviceId !== 'null') filter.serviceId = serviceId;
+
+    const activeProviders = await Provider.find(filter).sort({ updatedAt: -1 });
+    res.status(200).json({ success: true, data: activeProviders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// --- 4. HELITAANKA HAL KHABIIR ---
 router.get('/provider/:id', async (req, res) => {
   try {
     const provider = await Provider.findById(req.params.id);
-    
-    if (!provider) {
-      return res.status(404).json({ success: false, message: "Khabiirka lama helin!" });
-    }
-    
+    if (!provider) return res.status(404).json({ success: false, message: "Khabiirka lama helin!" });
     res.status(200).json({ success: true, data: provider });
   } catch (error) {
-    res.status(500).json({ success: false, message: "ID-ga khabiirka maahan mid sax ah." });
+    res.status(500).json({ success: false, message: "ID khaldan" });
   }
 });
 
@@ -96,17 +105,11 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
-    
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ success: false, message: "Email ama Password khaldan" });
     }
-    
     const token = generateToken(user);
-    res.json({ 
-      success: true, 
-      token, 
-      user: { id: user._id, name: user.name, role: user.role } 
-    });
+    res.json({ success: true, token, user: { id: user._id, name: user.name, role: user.role } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -117,7 +120,6 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password, phone, role } = req.body;
     const userExists = await User.findOne({ email });
-    
     if (userExists) return res.status(400).json({ success: false, message: "Email-kan waa la isticmaalay" });
 
     const user = await User.create({ name, email, password, phone, role: role || 'customer' });
