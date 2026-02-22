@@ -1,6 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { User, Provider } from '../models/models.js';
+import { User, Provider } from '../models/models.js'; 
 import { protect } from '../middleware/auth.js'; 
 
 const router = express.Router();
@@ -49,26 +49,42 @@ router.put('/profile', protect, async (req, res) => {
   }
 });
 
-// --- 3. HELITAANKA DHAMAAN KHUBARADA (Waxay saxaysaa 404-ka all-providers) ---
-router.get('/all-providers', async (req, res) => {
+// --- 3. HELITAANKA DHAMAAN KHUBARADA (Providers List) ---
+// Tani waxay xallinaysaa in dadka cusub (Axmed Cali) ay soo muuqdaan
+router.get('/providers', async (req, res) => {
   try {
-    const activeProviders = await Provider.find({ status: 'approved' })
-      .populate('user', 'name phone email')
+    const { serviceId } = req.query;
+    
+    // Filter-ka aasaasiga ah: Kaliya kuwa 'approved' ah
+    let filter = { status: 'approved' };
+
+    // Haddii serviceId uu URL-ka ku jiro, ku dar filter-ka
+    if (serviceId && serviceId !== 'null' && serviceId !== 'undefined') {
+      filter.serviceId = serviceId; 
+    }
+
+    const activeProviders = await Provider.find(filter)
       .sort({ updatedAt: -1 });
-    res.status(200).json({ success: true, data: activeProviders });
+    
+    res.status(200).json({ 
+      success: true, 
+      count: activeProviders.length,
+      data: activeProviders 
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// --- 4. HELITAANKA HAL KHABIIR ---
+// --- 4. HELITAANKA HAL KHABIIR (Single Provider) ---
 router.get('/provider/:id', async (req, res) => {
   try {
-    let provider = await Provider.findById(req.params.id).populate('user', 'name phone email');
+    const provider = await Provider.findById(req.params.id);
+    
     if (!provider) {
-      provider = await Provider.findOne({ user: req.params.id }).populate('user', 'name phone email');
+      return res.status(404).json({ success: false, message: "Khabiirka lama helin!" });
     }
-    if (!provider) return res.status(404).json({ success: false, message: "Khabiirka lama helin!" });
+    
     res.status(200).json({ success: true, data: provider });
   } catch (error) {
     res.status(500).json({ success: false, message: "ID-ga khabiirka maahan mid sax ah." });
@@ -80,11 +96,17 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
+    
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ success: false, message: "Email ama Password khaldan" });
     }
+    
     const token = generateToken(user);
-    res.json({ success: true, token, user: { id: user._id, name: user.name, role: user.role } });
+    res.json({ 
+      success: true, 
+      token, 
+      user: { id: user._id, name: user.name, role: user.role } 
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -95,12 +117,21 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password, phone, role } = req.body;
     const userExists = await User.findOne({ email });
+    
     if (userExists) return res.status(400).json({ success: false, message: "Email-kan waa la isticmaalay" });
 
     const user = await User.create({ name, email, password, phone, role: role || 'customer' });
+
     if (user.role === 'provider') {
-      await Provider.create({ user: user._id, fullName: name, email, phone, status: 'pending' });
+      await Provider.create({ 
+        user: user._id, 
+        fullName: name, 
+        email: email, 
+        phone: phone, 
+        status: 'pending' 
+      });
     }
+
     const token = generateToken(user);
     res.status(201).json({ success: true, token, user: { id: user._id, name: user.name, role: user.role } });
   } catch (error) {

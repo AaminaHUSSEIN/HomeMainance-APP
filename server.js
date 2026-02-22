@@ -5,7 +5,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// 1. Soo dhoofinta Routes-ka (Extensions .js waa muhiim)
+// 1. Soo dhoofinta Routes-ka
 import userRoutes from './routes/userRoutes.js';
 import serviceRoutes from './routes/services.js';
 import providerRoutes from './routes/providers.js';
@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 const app = express();
 
-// --- TALLAABADA MUHIIMKA AH: CORS ---
+// --- CORS POLICY ---
 const allowedOrigins = [
     'https://homemainance-app-production.up.railway.app',
     'http://localhost:5173',
@@ -41,7 +41,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// 3. Database Connection
+// 2. Database Connection
 const mongoURI = process.env.MONGO_URI;
 if (mongoURI) {
     mongoose.connect(mongoURI)
@@ -49,30 +49,34 @@ if (mongoURI) {
         .catch((err) => console.error("❌ Database Error:", err.message));
 }
 
-// 4. API Routes
-app.use('/api/auth', userRoutes);      
+// 3. API Routes 
+// Hubi in userRoutes gudihiisa uu jiro router.get('/providers')
 app.use('/api/users', userRoutes);      
 app.use('/api/services', serviceRoutes);
-app.use('/api/providers', providerRoutes);
+app.use('/api/providers_extra', providerRoutes); 
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes); 
 
-// 5. Serving Frontend (MUHIIM)
-// Hubi in folder-ka magaciisu yahay 'Frontend' (xaraf weyn) ama 'frontend' (xaraf yar)
+// 4. Serving Frontend Static Files
+// MUHIIM: static files waa in la horkeenaa '*' route-ka
 const frontendPath = path.resolve(__dirname, 'Frontend', 'dist');
 app.use(express.static(frontendPath)); 
 
-// 6. Root Route
+// 5. Global Route Handler (Frontend Routing)
 app.get('*', (req, res) => {
+    // Haddii URL-ku ku bilaabmo /api/ laakiin aan kor lagu qaban, waa API 404 dhab ah
     if (req.url.startsWith('/api/')) {
-        return res.status(404).json({ message: "API route not found" });
+        return res.status(404).json({ 
+            success: false, 
+            message: `API Route ${req.url} lama helin. Hubi Route-kaaga.` 
+        });
     }
     
-    const indexPath = path.join(frontendPath, 'index.html');
-    res.sendFile(indexPath, (err) => {
+    // Haddii kale, u dir index.html si React Router u xalliyo
+    res.sendFile(path.join(frontendPath, 'index.html'), (err) => {
         if (err) {
-            res.status(500).send("Frontend-ka lama helin. Hubi in 'npm run build' la sameeyay.");
+            res.status(500).send("Frontend dist folder lama helin. Run 'npm run build'.");
         }
     });
 });

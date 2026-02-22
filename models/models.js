@@ -21,7 +21,7 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// 2. Provider Schema
+// 2. Provider Schema - HALKAN AYAA LA SAXAY
 const providerSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, 
   fullName: { type: String }, 
@@ -34,9 +34,12 @@ const providerSchema = new mongoose.Schema({
   experience: { type: Number, default: 0 },       
   certificates: [{ type: String }],               
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  collection: 'providers' // MUHIIM: Waxay ku xiraysaa collection-ka MongoDB image-kaaga
+});
 
-// 3. Booking Schema (PAYMENT-KA WAA LAGA SAARAY)
+// 3. Booking Schema
 const bookingSchema = new mongoose.Schema({
   service: { type: mongoose.Schema.Types.ObjectId, ref: 'Provider', required: true }, 
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -44,15 +47,12 @@ const bookingSchema = new mongoose.Schema({
   time: { type: String },
   address: { type: String, required: true },
   description: { type: String, default: "No description provided" },
-  
-  // Status-yada loo baahan yahay
   status: { 
     type: String, 
     enum: ['pending', 'approved', 'completed', 'rejected', 'cancelled'], 
     default: 'pending' 
   }
-  // Halkan waxaa laga saaray: totalPrice, transactionId, iyo paidAt
-}, { timestamps: true });
+}, { timestamps: true, collection: 'bookings' });
 
 // 4. Review Schema
 const reviewSchema = new mongoose.Schema({
@@ -60,7 +60,7 @@ const reviewSchema = new mongoose.Schema({
   provider: { type: mongoose.Schema.Types.ObjectId, ref: 'Provider' }, 
   rating: { type: Number, required: true, min: 1, max: 5 },
   comment: { type: String, required: true }
-}, { timestamps: true });
+}, { timestamps: true, collection: 'reviews' });
 
 // FINAL EXPORTS
 export const User = mongoose.models.User || mongoose.model('User', userSchema);

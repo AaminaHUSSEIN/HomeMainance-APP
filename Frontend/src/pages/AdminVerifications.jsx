@@ -15,6 +15,7 @@ const AdminVerifications = () => {
   const fetchPendingProviders = async () => {
     try {
       setLoading(true);
+      // Hubi in endpoint-kani uu yahay kan Backend-ka ugu qoran 'getPendingProviders'
       const res = await api.get('/admin/pending-providers');
       if (res.data.success) {
         setPendingProviders(res.data.data);
@@ -28,26 +29,29 @@ const AdminVerifications = () => {
 
   const handleApprove = async (id) => {
     try {
+      // Hubi in magaca route-ka uu yahay 'approve-provider' sidii koodka Backend-ka
       const res = await api.put(`/admin/approve-provider/${id}`);
       if (res.data.success) {
         toast.success("Provider has been approved! ✨");
-        fetchPendingProviders();
+        // Halkan waxay dib u dhuuqi doontaa xogta cusub si qofka la aqbalay u baxo
+        fetchPendingProviders(); 
       }
     } catch (err) {
-      toast.error("Error occurred during approval");
+      toast.error(err.response?.data?.message || "Error occurred during approval");
     }
   };
 
   const handleReject = async (id) => {
     if (window.confirm("Are you sure you want to reject this application?")) {
       try {
+        // Reject-ku wuxuu isticmaalayaa deleteProvider koodka Backend-ka
         const res = await api.delete(`/admin/reject-provider/${id}`);
         if (res.data.success) {
-          toast.error("Application rejected");
+          toast.error("Application rejected and deleted");
           fetchPendingProviders();
         }
       } catch (err) {
-        toast.error("An error occurred");
+        toast.error("An error occurred during rejection");
       }
     }
   };
